@@ -13,11 +13,14 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+        self.SP = 7
         self.instructions = {
             "HLT": 0b00000001,
             "LDI": 0b10000010,
             "PRN": 0b01000111,
-            "MUL": 0b10100010
+            "MUL": 0b10100010,
+            "PUSH": 0b01000101,
+            "POP": 0b01000110
         }
 
     def load(self, program):
@@ -107,6 +110,18 @@ class CPU:
             elif ir == self.instructions["MUL"]:
                 self.alu("MUL", operand_a, operand_b)
                 self.pc += 3
+            elif ir == self.instructions["PUSH"]:
+                self.reg[self.SP] -= 1
+                reg_num = self.ram[self.pc+1]
+                val = self.reg[reg_num]
+                address = self.reg[self.SP]
+                self.ram[address] = val
+                self.pc += 2
+            elif ir == self.instructions["POP"]:
+                val = self.ram_read(self.reg[self.SP])
+                self.reg[operand_a] = val
+                self.reg[self.SP] += 1
+                self.pc += 2
             else:
                 print("unknown instruction")
                 sys.exit(1)
