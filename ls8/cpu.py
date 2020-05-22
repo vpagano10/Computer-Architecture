@@ -15,6 +15,7 @@ class CPU:
         self.pc = 0
         self.SP = 7
         self.reg[7] = 0xf4
+        self.flag = 0b00000000
         self.instructions = {
             "HLT": 0b00000001,
             "LDI": 0b10000010,
@@ -25,6 +26,18 @@ class CPU:
             "CALL": 0b01010000,
             "RET": 0b00010001,
             "ADD": 0b10100000,
+            # add the CMP instruction and equal flag
+            # 0b10100111
+            "CMP": 0b10100111,
+            # add the JMP instruction
+            # 0b01010100
+            "JMP": 0b01010100,
+            # add the JEQ instruction
+            # 0b01010101
+            "JEQ": 0b01010101,
+            # add the JNE instruction
+            # 0b01010110
+            "JNE": 0b01010110
         }
 
     def load(self, program):
@@ -63,6 +76,19 @@ class CPU:
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "CMP":
+            # 0b00000000
+            #        ^^^
+            #        lge
+            if self.reg[reg_a] < self.reg[reg_b]:
+                self.flag = 0b00000100
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.flag = 0b00000010
+            elif self.reg[reg_a] == self.reg[reg_b]:
+                self.flag = 0b00000001
+            else:
+                self.flag = 0b00000000
+            self.pc += 3
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -140,6 +166,22 @@ class CPU:
                 ret_add = self.ram[self.reg[self.SP]]
                 self.reg[self.SP] += 1
                 self.pc = ret_add
+
+            elif ir == self.instructions["CMP"]:
+                self.alu("CMP", operand_a, operand_b)
+            elif ir == self.instructions["JMP"]:
+                self.pc = self.reg[operand_a]
+            elif ir == self.instructions["JEQ"]:
+                if self.flag == 0b00000001:
+                    self.pc = self.reg[operand_a]
+                else:
+                    self.pc += 2
+            elif ir == self.instructions["JNE"]:
+                if self.flag & 0b00000001 == 0:
+                    self.pc = self.reg[operand_a]
+                else:
+                    self.pc += 2
+
             else:
                 print("unknown instruction")
                 sys.exit(1)
