@@ -14,13 +14,17 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.SP = 7
+        self.reg[7] = 0xf4
         self.instructions = {
             "HLT": 0b00000001,
             "LDI": 0b10000010,
             "PRN": 0b01000111,
             "MUL": 0b10100010,
             "PUSH": 0b01000101,
-            "POP": 0b01000110
+            "POP": 0b01000110,
+            "CALL": 0b01010000,
+            "RET": 0b00010001,
+            "ADD": 0b10100000,
         }
 
     def load(self, program):
@@ -110,6 +114,9 @@ class CPU:
             elif ir == self.instructions["MUL"]:
                 self.alu("MUL", operand_a, operand_b)
                 self.pc += 3
+            elif ir == self.instructions["ADD"]:
+                self.alu("ADD", operand_a, operand_b)
+                self.pc += 3
             elif ir == self.instructions["PUSH"]:
                 self.reg[self.SP] -= 1
                 reg_num = self.ram[self.pc+1]
@@ -122,6 +129,17 @@ class CPU:
                 self.reg[operand_a] = val
                 self.reg[self.SP] += 1
                 self.pc += 2
+            elif ir == self.instructions["CALL"]:
+                ret_add = self.pc + 2
+                self.reg[self.SP] -= 1
+                self.ram[self.reg[self.SP]] = ret_add
+                reg_num = self.ram[self.pc + 1]
+                dest_add = self.reg[reg_num]
+                self.pc = dest_add
+            elif ir == self.instructions["RET"]:
+                ret_add = self.ram[self.reg[self.SP]]
+                self.reg[self.SP] += 1
+                self.pc = ret_add
             else:
                 print("unknown instruction")
                 sys.exit(1)
